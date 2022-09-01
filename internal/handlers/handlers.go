@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -67,46 +68,44 @@ func RegisterHandler(db Database) func(http.ResponseWriter, *http.Request, httpr
 			return
 		}
 
-		id, err := db.GetOrCreate(r.Context(), &request.Section)
-		if err != nil {
-			log.Printf("Error getting or creating section: %s", err)
-			http.Error(w, "Error getting or creating section", http.StatusInternalServerError)
-			return
-		}
-
-		watchers, err := db.GetWatchers(r.Context(), id)
-		if err != nil {
-			log.Printf("Error getting watchers: %s", err)
-			http.Error(w, "Error getting watchers", http.StatusInternalServerError)
-			return
-		}
-
-		for _, watcher := range watchers {
-			if watcher.Email == request.User.Email {
-				log.Printf("User %s is already in the watchers list", request.User.Email)
-				if _, err := w.Write([]byte("OK")); err != nil {
-					log.Printf("Error writing Register response: %s", err)
-				}
-				return
-			} else if watcher.Phone == request.User.Phone {
-				log.Printf("User %s is already in the watchers list", request.User.Phone)
-				if _, err := w.Write([]byte("OK")); err != nil {
-					log.Printf("Error writing Register response: %s", err)
-				}
-				return
-			}
-		}
-
-		request.Section.Watchers = append(request.Section.Watchers, request.User)
-		err = db.UpdateSection(r.Context(), id, &request.User)
-		if err != nil {
-			log.Printf("Error updating section: %s", err)
-			http.Error(w, "Error updating section", http.StatusInternalServerError)
+		if err := register(r.Context(), db, &request); err != nil {
+			log.Printf("Error registering user: %s", err)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		w.WriteHeader(http.StatusCreated)
 	}
+}
+
+func register(ctx context.Context, db Database, req *RegisterRequest) error {
+	id, err := db.GetOrCreate(ctx, &req.Section)
+	if err != nil {
+		return fmt.Errorf("Error getting or creating section: %w", err)
+	}
+
+	watchers, err := db.GetWatchers(ctx, id)
+	if err != nil {
+		return fmt.Errorf("Error getting watchers: %w", err)
+	}
+
+	for _, watcher := range watchers {
+		if watcher.Email == req.User.Email {
+			log.Printf("%s is already in the watchers list", req.User.Email)
+			return nil
+		} else if watcher.Phone == req.User.Phone {
+			log.Printf("%s is already in the watchers list", req.User.Phone)
+			return nil
+		}
+	}
+
+	req.Section.Watchers = append(req.Section.Watchers, req.User)
+	err = db.UpdateSection(ctx, id, &req.User)
+	if err != nil {
+		return fmt.Errorf("Error updating section: %w", err)
+	}
+
+	return nil
 }
 
 func ValidateRegisterRequest(req *RegisterRequest) error {

@@ -37,10 +37,9 @@ func Trigger(db Database) func(http.ResponseWriter, *http.Request, httprouter.Pa
 		if err != nil {
 			log.Printf("Error getting sections: %s", err)
 		}
-		log.Printf("%+v", *sections[0])
 
-		if _, err := w.Write([]byte("OK")); err != nil {
-			log.Printf("Error writing Trigger response: %s", err)
+		if err := json.NewEncoder(w).Encode(sections); err != nil {
+			log.Printf("Error encoding sections: %s", err)
 		}
 	}
 }
@@ -64,6 +63,8 @@ func Notify(db Database) func(http.ResponseWriter, *http.Request, httprouter.Par
 		var request NotifyRequest
 		if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 			log.Printf("Error decoding Notify request: %s", err)
+			http.Error(w, "Error decoding Notify request", http.StatusBadRequest)
+			return
 		}
 
 		if err := ValidateNotifyRequest(&request); err != nil {
@@ -110,9 +111,7 @@ func Notify(db Database) func(http.ResponseWriter, *http.Request, httprouter.Par
 			return
 		}
 
-		if _, err := w.Write([]byte("OK")); err != nil {
-			log.Printf("Error writing Notify response: %s", err)
-		}
+		w.WriteHeader(http.StatusCreated)
 	}
 }
 
@@ -134,11 +133,8 @@ func ValidateNotifyRequest(req *NotifyRequest) error {
 		return errors.New("Term cannot be empty")
 	}
 
-	if req.User.Email == "" {
-		return errors.New("Email cannot be empty")
-	}
-	if req.User.Phone == "" {
-		return errors.New("Phone cannot be empty")
+	if req.User.Email == "" && req.User.Phone == "" {
+		return errors.New("User must have either an email or phone")
 	}
 
 	return nil

@@ -10,17 +10,23 @@ import (
 func Ping(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	log.Println("Ping request receieved")
 
-	w.Write([]byte("OK"))
+	if _, err := w.Write([]byte("OK")); err != nil {
+		log.Printf("Error writing Ping response: %s", err)
+	}
 }
 
 func Trigger(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	log.Println("Trigger request receieved")
 
-	w.Write([]byte("OK"))
+	if _, err := w.Write([]byte("OK")); err != nil {
+		log.Printf("Error writing Trigger response: %s", err)
+	}
 }
 
 func Notify(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	log.Println("Notify request receieved")
 
-	w.Write([]byte("OK"))
+	if _, err := w.Write([]byte("OK")); err != nil {
+		log.Printf("Error writing Notify response: %s", err)
+	}
 }

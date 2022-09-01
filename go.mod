@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go/firestore v1.6.1
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/spf13/viper v1.12.0
+	google.golang.org/api v0.81.0
 )
 
 require (
@@ -32,7 +33,6 @@ require (
 	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/xerrors v0.0.0-20220517211312-f3a8303e98df // indirect
-	google.golang.org/api v0.81.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20220519153652-3a47de7e79bd // indirect
 	google.golang.org/grpc v1.46.2 // indirect

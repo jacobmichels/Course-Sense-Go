@@ -30,12 +30,12 @@ func main() {
 	log.Println("Database client created")
 
 	// Ping endpoint for health check
-	r.GET("/ping", handlers.Ping())
+	r.GET("/ping", handlers.PingHandler())
 	// Triggers the empty space check
 	// This endpoint is meant to be called by a cron job
-	r.GET("/trigger", handlers.Trigger(db))
+	r.GET("/trigger", handlers.TriggerHandler(db))
 	// Registers notifications
-	r.PUT("/notify", handlers.Notify(db))
+	r.PUT("/register", handlers.RegisterHandler(db))
 
 	port := os.Getenv("PORT")
 	if port == "" {

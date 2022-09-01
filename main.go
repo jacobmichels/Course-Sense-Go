@@ -23,7 +23,7 @@ func main() {
 	}
 	log.Println("App config read")
 
-	db, err := database.NewFirestoreClient(ctx, config.Firestore.ProjectID, config.Firestore.CredentialsFilePath)
+	db, err := database.NewFirestoreClient(ctx, config.Firestore.ProjectID, config.Firestore.CollectionID, config.Firestore.CredentialsFilePath)
 	if err != nil {
 		log.Fatalf("Error creating Firestore client: %s", err)
 	}

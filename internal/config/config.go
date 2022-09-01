@@ -12,6 +12,7 @@ type AppConfig struct {
 	Firestore struct {
 		ProjectID           string `mapstructure:"project_id"`
 		CredentialsFilePath string `mapstructure:"credentials_file"`
+		CollectionID        string `mapstructure:"collection_id"`
 	}
 }
 
@@ -25,6 +26,7 @@ func ReadAppConfig() (*AppConfig, error) {
 
 	viper.SetDefault("firestore.project_id", "")
 	viper.SetDefault("firestore.credentials_file", "")
+	viper.SetDefault("firestore.collection_id", "sections")
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {

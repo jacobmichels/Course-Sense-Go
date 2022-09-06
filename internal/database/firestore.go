@@ -40,9 +40,10 @@ func (fd *FirestoreDatabase) Close() error {
 	return fd.client.Close()
 }
 
-// Returns a list of all sections
-func (fd *FirestoreDatabase) GetSections(ctx context.Context) ([]*types.CourseSection, error) {
+// Returns a list of all sections and their ids
+func (fd *FirestoreDatabase) GetSections(ctx context.Context) ([]*types.CourseSection, []string, error) {
 	var sections []*types.CourseSection
+	var ids []string
 	iter := fd.client.Collection(fd.collectionID).Documents(ctx)
 	for {
 		doc, err := iter.Next()
@@ -50,18 +51,19 @@ func (fd *FirestoreDatabase) GetSections(ctx context.Context) ([]*types.CourseSe
 			break
 		}
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 
 		var section *types.CourseSection
 		err = doc.DataTo(&section)
 		if err != nil {
-			return nil, fmt.Errorf("failed to unmarshal section: %v", err)
+			return nil, nil, fmt.Errorf("failed to unmarshal section: %v", err)
 		}
 		sections = append(sections, section)
+		ids = append(ids, doc.Ref.ID)
 	}
 
-	return sections, nil
+	return sections, ids, nil
 }
 
 func (fd *FirestoreDatabase) UpdateSection(ctx context.Context, id string, user *types.User) error {
@@ -116,4 +118,13 @@ func (fd *FirestoreDatabase) GetWatchers(ctx context.Context, id string) ([]type
 	}
 
 	return section.Watchers, nil
+}
+
+func (fd *FirestoreDatabase) DeleteSection(ctx context.Context, id string) error {
+	_, err := fd.client.Collection(fd.collectionID).Doc(id).Delete(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to delete section: %w", err)
+	}
+
+	return nil
 }

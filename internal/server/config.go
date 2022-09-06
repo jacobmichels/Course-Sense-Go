@@ -1,4 +1,4 @@
-package config
+package server
 
 import (
 	"fmt"
@@ -16,7 +16,7 @@ type AppConfig struct {
 	}
 }
 
-func ReadAppConfig() (*AppConfig, error) {
+func readAppConfig() (*AppConfig, error) {
 	viper.AddConfigPath(".")
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")

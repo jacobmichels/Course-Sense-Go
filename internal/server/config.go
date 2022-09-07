@@ -14,6 +14,18 @@ type AppConfig struct {
 		CredentialsFilePath string `mapstructure:"credentials_file"`
 		CollectionID        string `mapstructure:"collection_id"`
 	}
+	Twilio struct {
+		AccountSID  string `mapstructure:"account_sid"`
+		AuthToken   string `mapstructure:"auth_token"`
+		PhoneNumber string `mapstructure:"phone_number"`
+	}
+	Smtp struct {
+		Host     string `mapstructure:"host"`
+		Port     int    `mapstructure:"port"`
+		Username string `mapstructure:"username"`
+		Password string `mapstructure:"password"`
+		From     string `mapstructure:"from"`
+	}
 }
 
 func readAppConfig() (*AppConfig, error) {

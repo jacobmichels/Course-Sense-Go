@@ -10,9 +10,16 @@ import (
 	"time"
 
 	"github.com/jacobmichels/Course-Sense-Go/internal/database"
+	"github.com/jacobmichels/Course-Sense-Go/internal/notifier"
+	"github.com/jacobmichels/Course-Sense-Go/internal/types"
 	"github.com/jacobmichels/Course-Sense-Go/internal/webadvisor"
 	"github.com/julienschmidt/httprouter"
 )
+
+type Notifier interface {
+	Notify(context.Context, *types.CourseSection) error
+	Name() string
+}
 
 func Run(ctx context.Context) error {
 	config, err := readAppConfig()
@@ -27,6 +34,8 @@ func Run(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to create webadvisor service: %w", err)
 	}
+	tn := notifier.NewTwilioNotifier(config.Twilio.AccountSID, config.Twilio.AuthToken, config.Twilio.PhoneNumber)
+	en := notifier.NewEmailNotifier(config.Smtp.Host, config.Smtp.Username, config.Smtp.Password, config.Smtp.From, config.Smtp.Port)
 
 	r := httprouter.New()
 
@@ -34,7 +43,7 @@ func Run(ctx context.Context) error {
 	r.GET("/ping", pingHandler())
 	// Triggers the empty space check
 	// This endpoint is meant to be called by a cron job
-	r.GET("/trigger", triggerHandler(db, wa))
+	r.GET("/trigger", triggerHandler(db, wa, tn, en))
 	// Registers notifications
 	r.PUT("/register", registerHandler(db, wa))
 

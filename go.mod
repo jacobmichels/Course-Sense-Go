@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go/firestore v1.6.1
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/spf13/viper v1.12.0
+	github.com/twilio/twilio-go v0.26.0
 	google.golang.org/api v0.81.0
 )
 
@@ -14,6 +15,7 @@ require (
 	cloud.google.com/go/compute v1.6.1 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
+	github.com/golang/mock v1.6.0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/go-cmp v0.5.8 // indirect
 	github.com/googleapis/gax-go/v2 v2.4.0 // indirect
@@ -22,6 +24,7 @@ require (
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.1 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/spf13/afero v1.8.2 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect

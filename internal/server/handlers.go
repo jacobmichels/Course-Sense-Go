@@ -9,7 +9,6 @@ import (
 	"net/http"
 
 	"github.com/jacobmichels/Course-Sense-Go/internal/database"
-	"github.com/jacobmichels/Course-Sense-Go/internal/notifier"
 	"github.com/jacobmichels/Course-Sense-Go/internal/types"
 	"github.com/jacobmichels/Course-Sense-Go/internal/webadvisor"
 	"github.com/julienschmidt/httprouter"
@@ -25,11 +24,11 @@ func pingHandler() func(http.ResponseWriter, *http.Request, httprouter.Params) {
 	}
 }
 
-func triggerHandler(db *database.FirestoreDatabase, wa *webadvisor.WebAdvisor) func(http.ResponseWriter, *http.Request, httprouter.Params) {
+func triggerHandler(db *database.FirestoreDatabase, wa *webadvisor.WebAdvisor, notifiers ...Notifier) func(http.ResponseWriter, *http.Request, httprouter.Params) {
 	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		log.Println("Trigger request receieved")
 
-		if err := trigger(r.Context(), db, wa); err != nil {
+		if err := trigger(r.Context(), db, wa, notifiers...); err != nil {
 			log.Printf("Error occured during slot check: %s", err)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -38,7 +37,7 @@ func triggerHandler(db *database.FirestoreDatabase, wa *webadvisor.WebAdvisor) f
 	}
 }
 
-func trigger(ctx context.Context, db *database.FirestoreDatabase, wa *webadvisor.WebAdvisor) error {
+func trigger(ctx context.Context, db *database.FirestoreDatabase, wa *webadvisor.WebAdvisor, notifiers ...Notifier) error {
 	sections, ids, err := db.GetSections(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to list sections")
@@ -58,9 +57,11 @@ func trigger(ctx context.Context, db *database.FirestoreDatabase, wa *webadvisor
 		if capacity > 0 {
 			log.Printf("Section %s %d %s %s has %d capacity\n", section.Department, section.CourseCode, section.SectionCode, section.Term, capacity)
 
-			err := notifier.NotifyWatchers(ctx, section)
-			if err != nil {
-				log.Printf("failed to notify watchers: %s", err)
+			for _, notifier := range notifiers {
+				err = notifier.Notify(ctx, section)
+				if err != nil {
+					log.Printf("%s failed to notify: %s", notifier.Name(), err)
+				}
 			}
 
 			sectionID := ids[i]

@@ -55,18 +55,18 @@ func trigger(ctx context.Context, db *database.FirestoreDatabase, wa *webadvisor
 			log.Printf("failed to get section capacity: %s", err)
 		}
 
-		fmt.Printf("capacity: %d\n", capacity)
-
 		if capacity > 0 {
+			log.Printf("Section %s %d %s %s has %d capacity\n", section.Department, section.CourseCode, section.SectionCode, section.Term, capacity)
+
 			err := notifier.NotifyWatchers(ctx, section)
 			if err != nil {
-				return fmt.Errorf("failed to notify watchers: %w", err)
+				log.Printf("failed to notify watchers: %s", err)
 			}
 
 			sectionID := ids[i]
 			err = db.DeleteSection(ctx, sectionID)
 			if err != nil {
-				return fmt.Errorf("failed to delete section: %w", err)
+				log.Printf("failed to delete section: %s", err)
 			}
 		}
 	}
@@ -137,6 +137,8 @@ func register(ctx context.Context, db *database.FirestoreDatabase, wa *webadviso
 	if err != nil {
 		return fmt.Errorf("failed to find requested section")
 	}
+
+	log.Printf("Section %s %d %s %s exists in WebAdvisor, adding watcher\n", req.Section.Department, req.Section.CourseCode, req.Section.SectionCode, req.Section.Term)
 
 	id, err := db.GetOrCreate(ctx, &req.Section)
 	if err != nil {

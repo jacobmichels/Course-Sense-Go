@@ -9,7 +9,7 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -o /usr/bin/course-sense-go
+RUN go build -o /usr/bin/course-sense-go cmd/coursesense/main.go
 
 FROM alpine:3.16.2
 

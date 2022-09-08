@@ -32,7 +32,7 @@ func (s Server) Start(ctx context.Context) error {
 	r.PUT("/register", s.registerHandler())
 
 	srv := http.Server{Addr: s.addr, Handler: r}
-	log.Printf("listening on addr %s", s.addr)
+	log.Printf("listening on %s", s.addr)
 
 	// start server, respecting context cancelation
 	errChan := make(chan error)
@@ -68,7 +68,7 @@ func (s Server) pingHandler() httprouter.Handle {
 
 func (s Server) triggerHandler() httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		log.Println("Trigger request receieved")
+		log.Println("Trigger request received")
 
 		if err := s.triggerService.Trigger(r.Context()); err != nil {
 			log.Printf("trigger service failed: %s", err)
@@ -96,7 +96,7 @@ func (r RegisterRequest) Valid() error {
 
 func (s Server) registerHandler() httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		log.Println("Register request receieved")
+		log.Println("Register request received")
 
 		var req RegisterRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

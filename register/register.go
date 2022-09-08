@@ -34,7 +34,7 @@ func (r Register) Register(ctx context.Context, section coursesense.Section, wat
 	}
 
 	if err := r.watcherService.AddWatcher(ctx, section, watcher); err != nil {
-		return fmt.Errorf("failed to persist %s to %s", watcher, section)
+		return fmt.Errorf("failed to persist %s to %s: %w", watcher, section, err)
 	}
 
 	return nil

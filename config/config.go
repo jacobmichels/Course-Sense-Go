@@ -14,14 +14,14 @@ type Config struct {
 		CredentialsFilePath string `mapstructure:"credentials_file"`
 		SectionCollectionID string `mapstructure:"section_collection_id"`
 		WatcherCollectionID string `mapstructure:"watcher_collection_id"`
-	} `mapstructure:"firestore"`
+	}
 	Smtp struct {
 		Host     string `mapstructure:"host"`
 		Port     int    `mapstructure:"port"`
 		Username string `mapstructure:"username"`
 		Password string `mapstructure:"password"`
 		From     string `mapstructure:"from"`
-	} `mapstructure:"smtp"`
+	}
 }
 
 func ReadConfig() (Config, error) {
@@ -29,11 +29,13 @@ func ReadConfig() (Config, error) {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 
-	viper.AutomaticEnv()
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-
+	viper.SetDefault("firestore.project_id", "")
+	viper.SetDefault("firestore.credentials_file", "")
 	viper.SetDefault("firestore.section_collection_id", "sections")
 	viper.SetDefault("firestore.watcher_collection_id", "watchers")
+
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {

@@ -2,11 +2,14 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"os/signal"
 
+	"github.com/jacobmichels/Course-Sense-Go/config"
 	"github.com/jacobmichels/Course-Sense-Go/firestore"
+	"github.com/jacobmichels/Course-Sense-Go/notifier"
 	"github.com/jacobmichels/Course-Sense-Go/register"
 	"github.com/jacobmichels/Course-Sense-Go/server"
 	"github.com/jacobmichels/Course-Sense-Go/trigger"
@@ -25,20 +28,32 @@ func main() {
 		cancel()
 	}()
 
+	cfg, err := config.ReadConfig()
+	if err != nil {
+		log.Panicf("failed to get config: %s", err)
+	}
+
 	webadvisorService, err := webadvisor.NewWebAdvisorSectionService()
 	if err != nil {
 		log.Panicf("failed to create WebAdvisorSectionService: %s", err)
 	}
 
-	firestoreService, err := firestore.NewFirestoreWatcherService(ctx, "playground-351923", "sections", "watchers", "")
+	firestoreService, err := firestore.NewFirestoreWatcherService(ctx, cfg.Firestore.ProjectID, cfg.Firestore.SectionCollectionID, cfg.Firestore.WatcherCollectionID, cfg.Firestore.CredentialsFilePath)
 	if err != nil {
 		log.Panicf("failed to create FirestoreWatcherService: %s", err)
 	}
 
-	register := register.NewRegister(webadvisorService, firestoreService)
-	trigger := trigger.NewTrigger(webadvisorService, firestoreService)
+	emailNotifier := notifier.NewEmail(cfg.Smtp.Host, cfg.Smtp.Username, cfg.Smtp.Password, cfg.Smtp.From, cfg.Smtp.Port)
 
-	srv := server.NewServer(":8080", register, trigger)
+	register := register.NewRegister(webadvisorService, firestoreService)
+	trigger := trigger.NewTrigger(webadvisorService, firestoreService, emailNotifier)
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	srv := server.NewServer(fmt.Sprintf(":%s", port), register, trigger)
 	if err = srv.Start(ctx); err != nil {
 		log.Panicf("Server failure: %s", err)
 	}

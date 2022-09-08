@@ -141,13 +141,15 @@ func (f FirestoreWatcherService) GetWatchers(ctx context.Context, section course
 
 	var results []coursesense.Watcher
 	for _, document := range documents {
-		var result coursesense.Watcher
+		fmt.Printf("document.Data(): %v\n", document.Data())
+
+		var result FirestoreWatcher
 		err = document.DataTo(&result)
 		if err != nil {
 			return nil, fmt.Errorf("failed to deserialize document: %w", err)
 		}
 
-		results = append(results, result)
+		results = append(results, result.Watcher)
 	}
 
 	return results, nil

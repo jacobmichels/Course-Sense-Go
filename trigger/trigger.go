@@ -55,6 +55,8 @@ func (t Trigger) Trigger(ctx context.Context) error {
 			return fmt.Errorf("failed to get watchers for %s: %w", section, err)
 		}
 
+		fmt.Printf("Watchers: %+v\n", watchers)
+
 		for _, notifier := range t.notifiers {
 			err := notifier.Notify(ctx, section, watchers...)
 			if err != nil {

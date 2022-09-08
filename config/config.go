@@ -33,6 +33,11 @@ func ReadConfig() (Config, error) {
 	viper.SetDefault("firestore.credentials_file", "")
 	viper.SetDefault("firestore.section_collection_id", "sections")
 	viper.SetDefault("firestore.watcher_collection_id", "watchers")
+	viper.SetDefault("smtp.port", 0)
+	viper.SetDefault("smtp.host", "")
+	viper.SetDefault("smtp.username", "")
+	viper.SetDefault("smtp.password", "")
+	viper.SetDefault("smtp.from", "")
 
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.AutomaticEnv()

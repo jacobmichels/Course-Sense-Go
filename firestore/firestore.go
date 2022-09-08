@@ -141,8 +141,6 @@ func (f FirestoreWatcherService) GetWatchers(ctx context.Context, section course
 
 	var results []coursesense.Watcher
 	for _, document := range documents {
-		fmt.Printf("document.Data(): %v\n", document.Data())
-
 		var result FirestoreWatcher
 		err = document.DataTo(&result)
 		if err != nil {

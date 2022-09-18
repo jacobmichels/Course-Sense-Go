@@ -1,4 +1,4 @@
-package server
+package config
 
 import (
 	"fmt"
@@ -8,16 +8,12 @@ import (
 	"github.com/spf13/viper"
 )
 
-type AppConfig struct {
+type Config struct {
 	Firestore struct {
 		ProjectID           string `mapstructure:"project_id"`
 		CredentialsFilePath string `mapstructure:"credentials_file"`
-		CollectionID        string `mapstructure:"collection_id"`
-	}
-	Twilio struct {
-		AccountSID  string `mapstructure:"account_sid"`
-		AuthToken   string `mapstructure:"auth_token"`
-		PhoneNumber string `mapstructure:"phone_number"`
+		SectionCollectionID string `mapstructure:"section_collection_id"`
+		WatcherCollectionID string `mapstructure:"watcher_collection_id"`
 	}
 	Smtp struct {
 		Host     string `mapstructure:"host"`
@@ -28,31 +24,37 @@ type AppConfig struct {
 	}
 }
 
-func readAppConfig() (*AppConfig, error) {
+func ReadConfig() (Config, error) {
 	viper.AddConfigPath(".")
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 
-	viper.AutomaticEnv()
-	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
-
 	viper.SetDefault("firestore.project_id", "")
 	viper.SetDefault("firestore.credentials_file", "")
-	viper.SetDefault("firestore.collection_id", "sections")
+	viper.SetDefault("firestore.section_collection_id", "sections")
+	viper.SetDefault("firestore.watcher_collection_id", "watchers")
+	viper.SetDefault("smtp.port", 0)
+	viper.SetDefault("smtp.host", "")
+	viper.SetDefault("smtp.username", "")
+	viper.SetDefault("smtp.password", "")
+	viper.SetDefault("smtp.from", "")
+
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			log.Println("No config file found, continuing with env and defaults")
 		} else {
 			// Config file was found but another error was produced
-			return nil, fmt.Errorf("failed to read config file: %s", err)
+			return Config{}, fmt.Errorf("failed to read config file: %s", err)
 		}
 	}
 
-	var config AppConfig
+	var config Config
 	if err := viper.Unmarshal(&config); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal config: %s", err)
+		return Config{}, fmt.Errorf("failed to unmarshal config: %s", err)
 	}
 
-	return &config, nil
+	return config, nil
 }

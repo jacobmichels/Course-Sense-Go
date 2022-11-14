@@ -118,6 +118,6 @@ func (s Server) registerHandler() httprouter.Handle {
 		}
 
 		w.WriteHeader(http.StatusCreated)
-		log.Println("Register request succeeded")
+		log.Printf("Register request succeeded: %s*%d*%s*%s for %s", req.Section.Course.Department, req.Section.Course.Code, req.Section.Code, req.Section.Term, req.Watcher.Email)
 	}
 }

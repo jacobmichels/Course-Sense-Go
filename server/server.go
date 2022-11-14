@@ -113,11 +113,14 @@ func (s Server) registerHandler() httprouter.Handle {
 
 		if err := s.registrationService.Register(r.Context(), req.Section, req.Watcher); err != nil {
 			log.Printf("registration failed: %s", err)
-			http.Error(w, "Registration failed internally, please try again later. If error persists please contact service owner", http.StatusInternalServerError)
+			http.Error(w, "Registration failed, please ensure the course you are registering for exists. If error persists please contact service owner", http.StatusBadRequest)
 			return
 		}
 
 		w.WriteHeader(http.StatusCreated)
+		if _, err := w.Write([]byte("Registered for section")); err != nil {
+			log.Printf("error writing register response: %s", err)
+		}
 		log.Printf("Register request succeeded: %s*%d*%s*%s for %s", req.Section.Course.Department, req.Section.Course.Code, req.Section.Code, req.Section.Term, req.Watcher.Email)
 	}
 }

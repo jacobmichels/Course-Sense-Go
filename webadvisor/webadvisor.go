@@ -162,7 +162,7 @@ func (w WebAdvisorSectionService) searchCourses(ctx context.Context, token strin
 		}
 	}
 
-	return "", nil, fmt.Errorf("course not found")
+	return "", nil, fmt.Errorf("%s*%d*%s*%s not found", section.Course.Department, section.Course.Code, section.Term, section.Code)
 }
 
 type SectionListResponse struct {

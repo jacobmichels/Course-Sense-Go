@@ -118,7 +118,7 @@ func (s Server) registerHandler() httprouter.Handle {
 		}
 
 		w.WriteHeader(http.StatusCreated)
-		if _, err := w.Write([]byte("Registered for section")); err != nil {
+		if _, err := w.Write([]byte("Registered for section\n")); err != nil {
 			log.Printf("error writing register response: %s", err)
 		}
 		log.Printf("Register request succeeded: %s*%d*%s*%s for %s", req.Section.Course.Department, req.Section.Course.Code, req.Section.Code, req.Section.Term, req.Watcher.Email)

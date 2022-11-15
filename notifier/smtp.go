@@ -25,9 +25,17 @@ func NewEmail(host, username, password, from string, port int) Email {
 
 func (e Email) Notify(ctx context.Context, section coursesense.Section, watchers ...coursesense.Watcher) error {
 	auth := smtp.PlainAuth("", e.username, e.password, e.host)
-	msg := []byte(fmt.Sprintf("Hello from Course Sense!\n\nSpace has been found in the following course section: %s %d %s %s. Get over to WebAdvisor to claim the spot!", section.Course.Department, section.Course.Code, section.Code, section.Term))
 
 	for _, watcher := range watchers {
+		msg := []byte(fmt.Sprintf(`From: jacob.michels2025@gmail.com
+To: %s
+Subject: Course Sense Notification
+
+Hello from Course Sense!
+
+Space has been found in the following course section: %s %d %s %s. Get over to WebAdvisor to claim the spot!
+
+Thanks for using Course Sense.`, watcher.Email, section.Course.Department, section.Course.Code, section.Code, section.Term))
 		if watcher.Email == "" {
 			continue
 		}

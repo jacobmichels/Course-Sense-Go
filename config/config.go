@@ -22,6 +22,10 @@ type Config struct {
 		Password string `mapstructure:"password"`
 		From     string `mapstructure:"from"`
 	}
+	Auth struct {
+		Username string `mapstructure:"username"`
+		Password string `mapstructure:"password"`
+	}
 }
 
 func ReadConfig() (Config, error) {
@@ -38,6 +42,8 @@ func ReadConfig() (Config, error) {
 	viper.SetDefault("smtp.username", "")
 	viper.SetDefault("smtp.password", "")
 	viper.SetDefault("smtp.from", "")
+	viper.SetDefault("auth.username", "")
+	viper.SetDefault("auth.password", "")
 
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.AutomaticEnv()

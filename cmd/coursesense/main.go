@@ -53,7 +53,7 @@ func main() {
 		port = "8080"
 	}
 
-	srv := server.NewServer(fmt.Sprintf(":%s", port), register, trigger)
+	srv := server.NewServer(fmt.Sprintf(":%s", port), cfg.Auth.Username, cfg.Auth.Password, register, trigger)
 	if err = srv.Start(ctx); err != nil {
 		log.Panicf("Server failure: %s", err)
 	}

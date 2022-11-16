@@ -17,10 +17,12 @@ type Server struct {
 	registrationService coursesense.RegistrationService
 	triggerService      coursesense.TriggerService
 	addr                string
+	username            string
+	password            string
 }
 
-func NewServer(addr string, r coursesense.RegistrationService, t coursesense.TriggerService) Server {
-	return Server{r, t, addr}
+func NewServer(addr string, username, password string, r coursesense.RegistrationService, t coursesense.TriggerService) Server {
+	return Server{r, t, addr, username, password}
 }
 
 func (s Server) Start(ctx context.Context) error {
@@ -28,7 +30,7 @@ func (s Server) Start(ctx context.Context) error {
 
 	// register routes
 	r.GET("/ping", s.pingHandler())
-	r.GET("/trigger", s.triggerHandler())
+	r.GET("/trigger", basicAuthMiddleware(s.triggerHandler(), s.username, s.password))
 	r.PUT("/register", s.registerHandler())
 
 	srv := http.Server{Addr: s.addr, Handler: r}
@@ -92,6 +94,23 @@ func (r RegisterRequest) Valid() error {
 	}
 
 	return r.Watcher.Valid()
+}
+
+// straight up ripped from https://github.com/julienschmidt/httprouter
+func basicAuthMiddleware(h httprouter.Handle, requiredUsername, requiredPassword string) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+		// Get the Basic Authentication credentials
+		user, password, hasAuth := r.BasicAuth()
+
+		if hasAuth && user == requiredUsername && password == requiredPassword {
+			// Delegate request to the given handle
+			h(w, r, ps)
+		} else {
+			// Request Basic Authentication otherwise
+			w.Header().Set("WWW-Authenticate", "Basic realm=Restricted")
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		}
+	}
 }
 
 func (s Server) registerHandler() httprouter.Handle {

@@ -22,10 +22,6 @@ type Config struct {
 		Password string `mapstructure:"password"`
 		From     string `mapstructure:"from"`
 	}
-	Auth struct {
-		Username string `mapstructure:"username"`
-		Password string `mapstructure:"password"`
-	}
 }
 
 func ReadConfig() (Config, error) {

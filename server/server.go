@@ -17,12 +17,10 @@ type Server struct {
 	registrationService coursesense.RegistrationService
 	triggerService      coursesense.TriggerService
 	addr                string
-	username            string
-	password            string
 }
 
-func NewServer(addr string, username, password string, r coursesense.RegistrationService, t coursesense.TriggerService) Server {
-	return Server{r, t, addr, username, password}
+func NewServer(addr string, r coursesense.RegistrationService, t coursesense.TriggerService) Server {
+	return Server{r, t, addr}
 }
 
 func (s Server) Start(ctx context.Context) error {

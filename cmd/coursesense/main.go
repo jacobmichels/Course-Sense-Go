@@ -50,6 +50,7 @@ func main() {
 	trigger := trigger.NewTrigger(webadvisorService, firestoreService, emailNotifier)
 
 	go func() {
+		log.Println("starting trigger ticker")
 		ticker := time.NewTicker(5 * time.Minute)
 
 		for {
@@ -57,6 +58,7 @@ func main() {
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
+				log.Println("triggering webadvisor poll")
 				err := trigger.Trigger(ctx)
 				if err != nil {
 					log.Printf("failure occured during trigger: %v\n", err)

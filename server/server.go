@@ -30,7 +30,6 @@ func (s Server) Start(ctx context.Context) error {
 
 	// register routes
 	r.GET("/ping", s.pingHandler())
-	r.GET("/trigger", basicAuthMiddleware(s.triggerHandler(), s.username, s.password))
 	r.PUT("/register", s.registerHandler())
 
 	srv := http.Server{Addr: s.addr, Handler: r}
@@ -68,20 +67,6 @@ func (s Server) pingHandler() httprouter.Handle {
 	}
 }
 
-func (s Server) triggerHandler() httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		log.Println("Trigger request received")
-
-		if err := s.triggerService.Trigger(r.Context()); err != nil {
-			log.Printf("trigger service failed: %s", err)
-			http.Error(w, "Trigger failed internally, please try again later. If error persists please contact service owner", http.StatusInternalServerError)
-			return
-		}
-
-		log.Println("Trigger request succeeded")
-	}
-}
-
 type RegisterRequest struct {
 	Section coursesense.Section `json:"section"`
 	Watcher coursesense.Watcher `json:"watcher"`
@@ -94,23 +79,6 @@ func (r RegisterRequest) Valid() error {
 	}
 
 	return r.Watcher.Valid()
-}
-
-// straight up ripped from https://github.com/julienschmidt/httprouter
-func basicAuthMiddleware(h httprouter.Handle, requiredUsername, requiredPassword string) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-		// Get the Basic Authentication credentials
-		user, password, hasAuth := r.BasicAuth()
-
-		if hasAuth && user == requiredUsername && password == requiredPassword {
-			// Delegate request to the given handle
-			h(w, r, ps)
-		} else {
-			// Request Basic Authentication otherwise
-			w.Header().Set("WWW-Authenticate", "Basic realm=Restricted")
-			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-		}
-	}
 }
 
 func (s Server) registerHandler() httprouter.Handle {

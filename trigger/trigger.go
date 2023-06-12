@@ -21,6 +21,7 @@ func NewTrigger(s coursesense.SectionService, w coursesense.WatcherService, n ..
 	return Trigger{s, w, n}
 }
 
+// This function triggers a poll of webadvisor
 func (t Trigger) Trigger(ctx context.Context) error {
 	// Trigger steps
 	// 1. Get all watched sections from the watcher service

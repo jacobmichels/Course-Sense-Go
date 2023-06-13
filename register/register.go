@@ -12,10 +12,10 @@ var _ coursesense.RegistrationService = Register{}
 
 type Register struct {
 	sectionService coursesense.SectionService
-	watcherService coursesense.WatcherService
+	watcherService coursesense.Repository
 }
 
-func NewRegister(s coursesense.SectionService, w coursesense.WatcherService) Register {
+func NewRegister(s coursesense.SectionService, w coursesense.Repository) Register {
 	return Register{s, w}
 }
 

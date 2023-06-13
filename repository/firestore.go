@@ -1,4 +1,4 @@
-package firestore
+package repository
 
 import (
 	"context"
@@ -7,15 +7,15 @@ import (
 
 	"cloud.google.com/go/firestore"
 	coursesense "github.com/jacobmichels/Course-Sense-Go"
+	"github.com/jacobmichels/Course-Sense-Go/config"
 	"google.golang.org/api/option"
 )
 
-var _ coursesense.WatcherService = FirestoreWatcherService{}
+var _ coursesense.Repository = FirestoreRepository{}
 
-type FirestoreWatcherService struct {
-	firestore           *firestore.Client
-	sectionCollectionID string
-	watcherCollectionID string
+type FirestoreRepository struct {
+	firestore *firestore.Client
+	cfg       config.Firestore
 }
 
 type FirestoreWatcher struct {
@@ -23,34 +23,34 @@ type FirestoreWatcher struct {
 	SectionID string              `json:"sectionID"`
 }
 
-func NewFirestoreWatcherService(ctx context.Context, projectID, sectionCollectionID, watcherCollectionID, credentialsPath string) (FirestoreWatcherService, error) {
+func newFirestoreRepository(ctx context.Context, cfg config.Firestore) (FirestoreRepository, error) {
 	// Create a new Firestore client using application default credentials.
-	if credentialsPath == "" {
-		client, err := firestore.NewClient(ctx, projectID)
+	if cfg.CredentialsFile == "" {
+		client, err := firestore.NewClient(ctx, cfg.ProjectID)
 		if err != nil {
-			return FirestoreWatcherService{}, err
+			return FirestoreRepository{}, err
 		}
 
-		return FirestoreWatcherService{client, sectionCollectionID, watcherCollectionID}, nil
+		return FirestoreRepository{client, cfg}, nil
 	}
 
 	// Create a new Firestore client using supplied credentials file.
-	client, err := firestore.NewClient(ctx, projectID, option.WithCredentialsFile(credentialsPath))
+	client, err := firestore.NewClient(ctx, cfg.ProjectID, option.WithCredentialsFile(cfg.CredentialsFile))
 	if err != nil {
-		return FirestoreWatcherService{}, err
+		return FirestoreRepository{}, err
 	}
 
-	return FirestoreWatcherService{client, sectionCollectionID, watcherCollectionID}, nil
+	return FirestoreRepository{client, cfg}, nil
 }
 
-func (f FirestoreWatcherService) AddWatcher(ctx context.Context, section coursesense.Section, watcher coursesense.Watcher) error {
+func (f FirestoreRepository) AddWatcher(ctx context.Context, section coursesense.Section, watcher coursesense.Watcher) error {
 	// Steps:
 	// 1. Retrieve the section document, creating it if it doesn't exist
 	// 2. Inspect the current watchers. If the new watcher is already a watcher, stop and return a nil error
 	// 3. Append the new watcher to the watchers array
 	// 4. Update the document in the collection
 
-	documents, err := f.firestore.Collection(f.sectionCollectionID).Where("Code", "==", section.Code).Where("Term", "==", section.Term).Where("Course.Code", "==", section.Course.Code).Where("Course.Department", "==", section.Course.Department).Documents(ctx).GetAll()
+	documents, err := f.firestore.Collection(f.cfg.SectionCollectionID).Where("Code", "==", section.Code).Where("Term", "==", section.Term).Where("Course.Code", "==", section.Course.Code).Where("Course.Department", "==", section.Course.Department).Documents(ctx).GetAll()
 	if err != nil {
 		return fmt.Errorf("failed to get matching section documents: %w", err)
 	}
@@ -61,7 +61,7 @@ func (f FirestoreWatcherService) AddWatcher(ctx context.Context, section courses
 
 	var sectionID string
 	if len(documents) == 0 {
-		ref, _, err := f.firestore.Collection(f.sectionCollectionID).Add(ctx, section)
+		ref, _, err := f.firestore.Collection(f.cfg.SectionCollectionID).Add(ctx, section)
 		if err != nil {
 			return fmt.Errorf("failed to add %s to collection: %w", section, err)
 		}
@@ -70,7 +70,7 @@ func (f FirestoreWatcherService) AddWatcher(ctx context.Context, section courses
 		sectionID = documents[0].Ref.ID
 	}
 
-	documents, err = f.firestore.Collection(f.watcherCollectionID).Where("SectionID", "==", sectionID).Documents(ctx).GetAll()
+	documents, err = f.firestore.Collection(f.cfg.WatcherCollectionID).Where("SectionID", "==", sectionID).Documents(ctx).GetAll()
 	if err != nil {
 		return fmt.Errorf("failed to get matching watcher documents: %w", err)
 	}
@@ -89,7 +89,7 @@ func (f FirestoreWatcherService) AddWatcher(ctx context.Context, section courses
 	}
 
 	newWatcher := FirestoreWatcher{Watcher: watcher, SectionID: sectionID}
-	_, _, err = f.firestore.Collection(f.watcherCollectionID).Add(ctx, newWatcher)
+	_, _, err = f.firestore.Collection(f.cfg.WatcherCollectionID).Add(ctx, newWatcher)
 	if err != nil {
 		return fmt.Errorf("failed to write new watcher to collection: %w", err)
 	}
@@ -97,8 +97,8 @@ func (f FirestoreWatcherService) AddWatcher(ctx context.Context, section courses
 	return nil
 }
 
-func (f FirestoreWatcherService) GetWatchedSections(ctx context.Context) ([]coursesense.Section, error) {
-	documents, err := f.firestore.Collection(f.sectionCollectionID).Documents(ctx).GetAll()
+func (f FirestoreRepository) GetWatchedSections(ctx context.Context) ([]coursesense.Section, error) {
+	documents, err := f.firestore.Collection(f.cfg.SectionCollectionID).Documents(ctx).GetAll()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get all documents in sections collection: %w", err)
 	}
@@ -117,8 +117,8 @@ func (f FirestoreWatcherService) GetWatchedSections(ctx context.Context) ([]cour
 	return results, nil
 }
 
-func (f FirestoreWatcherService) GetWatchers(ctx context.Context, section coursesense.Section) ([]coursesense.Watcher, error) {
-	documents, err := f.firestore.Collection(f.sectionCollectionID).Where("Code", "==", section.Code).Where("Term", "==", section.Term).Where("Course.Code", "==", section.Course.Code).Where("Course.Department", "==", section.Course.Department).Documents(ctx).GetAll()
+func (f FirestoreRepository) GetWatchers(ctx context.Context, section coursesense.Section) ([]coursesense.Watcher, error) {
+	documents, err := f.firestore.Collection(f.cfg.SectionCollectionID).Where("Code", "==", section.Code).Where("Term", "==", section.Term).Where("Course.Code", "==", section.Course.Code).Where("Course.Department", "==", section.Course.Department).Documents(ctx).GetAll()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get matching section documents: %w", err)
 	}
@@ -134,7 +134,7 @@ func (f FirestoreWatcherService) GetWatchers(ctx context.Context, section course
 
 	sectionID := documents[0].Ref.ID
 
-	documents, err = f.firestore.Collection(f.watcherCollectionID).Where("SectionID", "==", sectionID).Documents(ctx).GetAll()
+	documents, err = f.firestore.Collection(f.cfg.WatcherCollectionID).Where("SectionID", "==", sectionID).Documents(ctx).GetAll()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get matching watcher documents: %w", err)
 	}
@@ -153,8 +153,8 @@ func (f FirestoreWatcherService) GetWatchers(ctx context.Context, section course
 	return results, nil
 }
 
-func (f FirestoreWatcherService) RemoveWatchers(ctx context.Context, section coursesense.Section) error {
-	documents, err := f.firestore.Collection(f.sectionCollectionID).Where("Code", "==", section.Code).Where("Term", "==", section.Term).Where("Course.Code", "==", section.Course.Code).Where("Course.Department", "==", section.Course.Department).Documents(ctx).GetAll()
+func (f FirestoreRepository) Cleanup(ctx context.Context, section coursesense.Section) error {
+	documents, err := f.firestore.Collection(f.cfg.SectionCollectionID).Where("Code", "==", section.Code).Where("Term", "==", section.Term).Where("Course.Code", "==", section.Course.Code).Where("Course.Department", "==", section.Course.Department).Documents(ctx).GetAll()
 	if err != nil {
 		return fmt.Errorf("failed to get matching section documents: %w", err)
 	}
@@ -174,7 +174,7 @@ func (f FirestoreWatcherService) RemoveWatchers(ctx context.Context, section cou
 		return fmt.Errorf("failed to delete section: %w", err)
 	}
 
-	documents, err = f.firestore.Collection(f.watcherCollectionID).Where("SectionID", "==", sectionID).Documents(ctx).GetAll()
+	documents, err = f.firestore.Collection(f.cfg.WatcherCollectionID).Where("SectionID", "==", sectionID).Documents(ctx).GetAll()
 	if err != nil {
 		return fmt.Errorf("failed to get matching watcher documents: %w", err)
 	}

@@ -13,11 +13,11 @@ var _ coursesense.TriggerService = Trigger{}
 
 type Trigger struct {
 	sectionService coursesense.SectionService
-	watcherService coursesense.WatcherService
+	watcherService coursesense.Repository
 	notifiers      []coursesense.Notifier
 }
 
-func NewTrigger(s coursesense.SectionService, w coursesense.WatcherService, n ...coursesense.Notifier) Trigger {
+func NewTrigger(s coursesense.SectionService, w coursesense.Repository, n ...coursesense.Notifier) Trigger {
 	return Trigger{s, w, n}
 }
 
@@ -63,7 +63,7 @@ func (t Trigger) Trigger(ctx context.Context) error {
 			}
 		}
 
-		if err := t.watcherService.RemoveWatchers(ctx, section); err != nil {
+		if err := t.watcherService.Cleanup(ctx, section); err != nil {
 			return fmt.Errorf("failed to remove watchers from %s: %w", section, err)
 		}
 	}

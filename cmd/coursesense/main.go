@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/jacobmichels/Course-Sense-Go/config"
-	"github.com/jacobmichels/Course-Sense-Go/firestore"
 	"github.com/jacobmichels/Course-Sense-Go/notifier"
 	"github.com/jacobmichels/Course-Sense-Go/register"
+	"github.com/jacobmichels/Course-Sense-Go/repository"
 	"github.com/jacobmichels/Course-Sense-Go/server"
 	"github.com/jacobmichels/Course-Sense-Go/trigger"
 	"github.com/jacobmichels/Course-Sense-Go/webadvisor"
@@ -29,7 +29,7 @@ func main() {
 		cancel()
 	}()
 
-	cfg, err := config.ReadConfig()
+	cfg, err := config.ParseConfig()
 	if err != nil {
 		log.Panicf("failed to get config: %s", err)
 	}
@@ -39,15 +39,15 @@ func main() {
 		log.Panicf("failed to create WebAdvisorSectionService: %s", err)
 	}
 
-	firestoreService, err := firestore.NewFirestoreWatcherService(ctx, cfg.Firestore.ProjectID, cfg.Firestore.SectionCollectionID, cfg.Firestore.WatcherCollectionID, cfg.Firestore.CredentialsFilePath)
+	repository, err := repository.New(ctx, cfg.Database)
 	if err != nil {
-		log.Panicf("failed to create FirestoreWatcherService: %s", err)
+		log.Panicf("failed to create repository: %s", err)
 	}
 
-	emailNotifier := notifier.NewEmail(cfg.Smtp.Host, cfg.Smtp.Username, cfg.Smtp.Password, cfg.Smtp.From, cfg.Smtp.Port)
+	emailNotifier := notifier.NewEmail(cfg.Notifications.EmailSmtp.Host, cfg.Notifications.EmailSmtp.Username, cfg.Notifications.EmailSmtp.Password, cfg.Notifications.EmailSmtp.From, cfg.Notifications.EmailSmtp.Port)
 
-	register := register.NewRegister(webadvisorService, firestoreService)
-	trigger := trigger.NewTrigger(webadvisorService, firestoreService, emailNotifier)
+	register := register.NewRegister(webadvisorService, repository)
+	trigger := trigger.NewTrigger(webadvisorService, repository, emailNotifier)
 
 	go func() {
 		log.Println("starting trigger ticker")
@@ -72,7 +72,7 @@ func main() {
 		port = "8080"
 	}
 
-	srv := server.NewServer(fmt.Sprintf(":%s", port), cfg.Auth.Username, cfg.Auth.Password, register, trigger)
+	srv := server.NewServer(fmt.Sprintf(":%s", port), register, trigger)
 	if err = srv.Start(ctx); err != nil {
 		log.Panicf("Server failure: %s", err)
 	}

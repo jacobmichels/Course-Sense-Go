@@ -68,12 +68,13 @@ func (w Watcher) String() string {
 	return fmt.Sprintf("%s:%s", w.Email, w.Phone)
 }
 
-// Service that manages Watchers
-type WatcherService interface {
+// Service that persists watched sections
+type Repository interface {
 	AddWatcher(context.Context, Section, Watcher) error
 	GetWatchedSections(context.Context) ([]Section, error)
 	GetWatchers(context.Context, Section) ([]Watcher, error)
-	RemoveWatchers(context.Context, Section) error
+	// This function removes a section and its watchers. It will also remove the associated course if no other sections reference it
+	Cleanup(context.Context, Section) error
 }
 
 // A type that sends can send notifications to Watchers

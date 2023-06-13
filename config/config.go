@@ -8,42 +8,30 @@ import (
 	"github.com/spf13/viper"
 )
 
-type Config struct {
-	Firestore struct {
-		ProjectID           string `mapstructure:"project_id"`
-		CredentialsFilePath string `mapstructure:"credentials_file"`
-		SectionCollectionID string `mapstructure:"section_collection_id"`
-		WatcherCollectionID string `mapstructure:"watcher_collection_id"`
-	}
-	Smtp struct {
-		Host     string `mapstructure:"host"`
-		Port     int    `mapstructure:"port"`
-		Username string `mapstructure:"username"`
-		Password string `mapstructure:"password"`
-		From     string `mapstructure:"from"`
-	}
-	Auth struct {
-		Username string `mapstructure:"username"`
-		Password string `mapstructure:"password"`
-	}
+// returns a slice of the supported db names
+// a function is used to access this list instead of a global slice to prevent accidental mutation of the slice
+func getSupportedDbs() []string {
+	return []string{"sqlite", "firestore"}
 }
 
-func ReadConfig() (Config, error) {
+// reads the config file
+// returns an error if the file couldn't be read or is invalid
+func ParseConfig() (Config, error) {
 	viper.AddConfigPath(".")
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 
-	viper.SetDefault("firestore.project_id", "")
-	viper.SetDefault("firestore.credentials_file", "")
-	viper.SetDefault("firestore.section_collection_id", "sections")
-	viper.SetDefault("firestore.watcher_collection_id", "watchers")
-	viper.SetDefault("smtp.port", 0)
-	viper.SetDefault("smtp.host", "")
-	viper.SetDefault("smtp.username", "")
-	viper.SetDefault("smtp.password", "")
-	viper.SetDefault("smtp.from", "")
-	viper.SetDefault("auth.username", "")
-	viper.SetDefault("auth.password", "")
+	viper.SetDefault("database.type", "")
+	viper.SetDefault("database.firestore.project_id", "")
+	viper.SetDefault("database.firestore.credentials_file", "")
+	viper.SetDefault("database.firestore.section_collection_id", "sections")
+	viper.SetDefault("database.firestore.watcher_collection_id", "watchers")
+	viper.SetDefault("database.sqlite.connection_string", "")
+	viper.SetDefault("notifications.emailsmtp.port", 0)
+	viper.SetDefault("notifications.emailsmtp.host", "")
+	viper.SetDefault("notifications.emailsmtp.username", "")
+	viper.SetDefault("notifications.emailsmtp.password", "")
+	viper.SetDefault("notifications.emailsmtp.from", "")
 
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.AutomaticEnv()
@@ -57,10 +45,28 @@ func ReadConfig() (Config, error) {
 		}
 	}
 
-	var config Config
-	if err := viper.Unmarshal(&config); err != nil {
+	var cfg Config
+	if err := viper.Unmarshal(&cfg); err != nil {
 		return Config{}, fmt.Errorf("failed to unmarshal config: %s", err)
 	}
 
-	return config, nil
+	if err := validateConfig(cfg); err != nil {
+		return Config{}, fmt.Errorf("invalid config: %w", err)
+	}
+
+	return cfg, nil
+}
+
+func validateConfig(cfg Config) error {
+	if cfg.Database.Type == "" {
+		return fmt.Errorf("no database type set. database type can be one of: %v", getSupportedDbs())
+	} else if cfg.Database.Type != "sqlite" && cfg.Database.Type != "firestore" {
+		return fmt.Errorf("bad database type. database type can be one of: %v", getSupportedDbs())
+	}
+
+	if cfg.Database.Type == "sqlite" && cfg.Database.SQLite.ConnectionString == "" {
+		log.Printf("warn: sqlite connection string is empty")
+	}
+
+	return nil
 }

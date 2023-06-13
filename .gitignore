@@ -1,3 +1,4 @@
 config.yml
 credentials/
 .DS_Store
+*.db

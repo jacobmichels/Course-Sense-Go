@@ -21,6 +21,7 @@ func ParseConfig() (Config, error) {
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 
+	viper.SetDefault("poll_interval_secs", 300)
 	viper.SetDefault("database.type", "")
 	viper.SetDefault("database.firestore.project_id", "")
 	viper.SetDefault("database.firestore.credentials_file", "")

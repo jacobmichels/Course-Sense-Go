@@ -65,7 +65,7 @@ func (t Trigger) Trigger(ctx context.Context) error {
 		}
 
 		if err := t.watcherService.Cleanup(ctx, section); err != nil {
-			return fmt.Errorf("failed to remove watchers from %s: %w", section, err)
+			return fmt.Errorf("failed to cleanup section %s: %w", section, err)
 		}
 	}
 

@@ -12,10 +12,10 @@ import (
 
 func New(ctx context.Context, cfg config.Database) (coursesense.Repository, error) {
 	if cfg.Type == "firestore" {
-		log.Info().Msg("creating firestore repository")
+		log.Info().Msg("using firestore repository")
 		return newFirestoreRepository(ctx, cfg.Firestore)
 	} else if cfg.Type == "sqlite" {
-		log.Info().Msg("creating sqlite repository")
+		log.Info().Msg("using sqlite repository")
 		return newSQLiteRepository(ctx, cfg.SQLite)
 	} else {
 		return nil, errors.New("invalid database type")

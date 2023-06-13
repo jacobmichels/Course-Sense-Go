@@ -61,7 +61,7 @@ func (s Server) pingHandler() httprouter.Handle {
 		log.Info().Msg("Ping request received")
 
 		if _, err := w.Write([]byte("OK")); err != nil {
-			log.Info().Msgf("Error writing ping response: %s", err)
+			log.Error().Msgf("Error writing ping response: %s", err)
 		}
 	}
 }
@@ -86,26 +86,26 @@ func (s Server) registerHandler() httprouter.Handle {
 
 		var req RegisterRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			log.Info().Msgf("error decoding register request: %s", err)
+			log.Error().Msgf("error decoding register request: %s", err)
 			http.Error(w, "Failed to parse request", http.StatusBadRequest)
 			return
 		}
 
 		if err := req.Valid(); err != nil {
-			log.Info().Msgf("register request invalid: %s", err)
+			log.Error().Msgf("register request invalid: %s", err)
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
 			return
 		}
 
 		if err := s.registrationService.Register(r.Context(), req.Section, req.Watcher); err != nil {
-			log.Info().Msgf("registration failed: %s", err)
+			log.Error().Msgf("registration failed: %s", err)
 			http.Error(w, "Registration failed, please ensure the course you are registering for exists. If error persists please contact service owner", http.StatusBadRequest)
 			return
 		}
 
 		w.WriteHeader(http.StatusCreated)
 		if _, err := w.Write([]byte("Registered for section\n")); err != nil {
-			log.Info().Msgf("error writing register response: %s", err)
+			log.Error().Msgf("error writing register response: %s", err)
 		}
 		log.Info().Msgf("Register request succeeded: %s*%d*%s*%s for %s", req.Section.Course.Department, req.Section.Course.Code, req.Section.Code, req.Section.Term, req.Watcher.Email)
 	}

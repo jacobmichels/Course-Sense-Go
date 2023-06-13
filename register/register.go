@@ -12,11 +12,11 @@ var _ coursesense.RegistrationService = Register{}
 
 type Register struct {
 	sectionService coursesense.SectionService
-	watcherService coursesense.Repository
+	repository     coursesense.Repository
 }
 
-func NewRegister(s coursesense.SectionService, w coursesense.Repository) Register {
-	return Register{s, w}
+func NewRegister(s coursesense.SectionService, r coursesense.Repository) Register {
+	return Register{s, r}
 }
 
 func (r Register) Register(ctx context.Context, section coursesense.Section, watcher coursesense.Watcher) error {
@@ -33,7 +33,7 @@ func (r Register) Register(ctx context.Context, section coursesense.Section, wat
 		return fmt.Errorf("section %s does not exist", section)
 	}
 
-	if err := r.watcherService.AddWatcher(ctx, section, watcher); err != nil {
+	if err := r.repository.AddWatcher(ctx, section, watcher); err != nil {
 		return fmt.Errorf("failed to persist %s to %s: %w", watcher, section, err)
 	}
 

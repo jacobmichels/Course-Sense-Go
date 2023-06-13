@@ -53,7 +53,7 @@ func main() {
 	trigger := trigger.NewTrigger(webadvisorService, repository, emailNotifier)
 
 	go func() {
-		log.Info().Msgf("starting trigger ticker: polling every %d seconds", cfg.PollIntervalSecs)
+		log.Info().Msgf("starting poll ticker: polling every %d seconds", cfg.PollIntervalSecs)
 		ticker := time.NewTicker(time.Second * time.Duration(cfg.PollIntervalSecs))
 
 		for {

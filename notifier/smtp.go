@@ -45,7 +45,7 @@ Thanks for using Course Sense.`, watcher.Email, section.Course.Department, secti
 		if err != nil {
 			return fmt.Errorf("failed to notify %s: %w", watcher.Email, err)
 		}
-		log.Info().Msg("Notification email sent")
+		log.Info().Msgf("Notification email sent to %s", watcher)
 	}
 
 	return nil

@@ -1,8 +1,9 @@
 package config
 
 type Config struct {
-	Database      Database
-	Notifications Notifications
+	Database         Database
+	Notifications    Notifications
+	PollIntervalSecs int `mapstructure:"poll_interval_secs"`
 }
 
 type Database struct {

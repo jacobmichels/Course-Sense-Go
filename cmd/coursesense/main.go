@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"time"
@@ -15,9 +14,17 @@ import (
 	"github.com/jacobmichels/Course-Sense-Go/server"
 	"github.com/jacobmichels/Course-Sense-Go/trigger"
 	"github.com/jacobmichels/Course-Sense-Go/webadvisor"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 func main() {
+	// use pretty logging for local development
+	// app_env is set in the dockerfile
+	if os.Getenv("app_env") != "prod" {
+		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout})
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -25,23 +32,23 @@ func main() {
 	signal.Notify(sig, os.Interrupt)
 	go func() {
 		<-sig
-		log.Println("received interrupt, shutting down")
+		log.Info().Msg("received interrupt, shutting down")
 		cancel()
 	}()
 
 	cfg, err := config.ParseConfig()
 	if err != nil {
-		log.Panicf("failed to get config: %s", err)
+		log.Fatal().Msgf("failed to get config: %v", err)
 	}
 
 	webadvisorService, err := webadvisor.NewWebAdvisorSectionService()
 	if err != nil {
-		log.Panicf("failed to create WebAdvisorSectionService: %s", err)
+		log.Fatal().Msgf("failed to create WebAdvisorSectionService: %v", err)
 	}
 
 	repository, err := repository.New(ctx, cfg.Database)
 	if err != nil {
-		log.Panicf("failed to create repository: %s", err)
+		log.Fatal().Msgf("failed to create repository: %v", err)
 	}
 
 	emailNotifier := notifier.NewEmail(cfg.Notifications.EmailSmtp.Host, cfg.Notifications.EmailSmtp.Username, cfg.Notifications.EmailSmtp.Password, cfg.Notifications.EmailSmtp.From, cfg.Notifications.EmailSmtp.Port)
@@ -50,7 +57,7 @@ func main() {
 	trigger := trigger.NewTrigger(webadvisorService, repository, emailNotifier)
 
 	go func() {
-		log.Printf("starting trigger ticker: polling every %d seconds\n", cfg.PollIntervalSecs)
+		log.Info().Msgf("starting poll ticker: polling every %d seconds", cfg.PollIntervalSecs)
 		ticker := time.NewTicker(time.Second * time.Duration(cfg.PollIntervalSecs))
 
 		for {
@@ -58,10 +65,10 @@ func main() {
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				log.Println("triggering webadvisor poll")
+				log.Info().Msg("triggering webadvisor poll")
 				err := trigger.Trigger(ctx)
 				if err != nil {
-					log.Printf("failure occured during trigger: %v\n", err)
+					log.Error().Msgf("failure occured during trigger: %v", err)
 				}
 			}
 		}
@@ -74,6 +81,6 @@ func main() {
 
 	srv := server.NewServer(fmt.Sprintf(":%s", port), register, trigger)
 	if err = srv.Start(ctx); err != nil {
-		log.Panicf("Server failure: %s", err)
+		log.Fatal().Msgf("Server failure: %v", err)
 	}
 }

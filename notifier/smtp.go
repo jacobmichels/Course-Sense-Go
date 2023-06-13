@@ -3,8 +3,9 @@ package notifier
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/smtp"
+
+	"github.com/rs/zerolog/log"
 
 	coursesense "github.com/jacobmichels/Course-Sense-Go"
 )
@@ -44,7 +45,7 @@ Thanks for using Course Sense.`, watcher.Email, section.Course.Department, secti
 		if err != nil {
 			return fmt.Errorf("failed to notify %s: %w", watcher.Email, err)
 		}
-		log.Println("Notification email sent")
+		log.Info().Msgf("Notification email sent to %s", watcher)
 	}
 
 	return nil

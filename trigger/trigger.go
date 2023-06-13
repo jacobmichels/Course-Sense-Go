@@ -3,7 +3,8 @@ package trigger
 import (
 	"context"
 	"fmt"
-	"log"
+
+	"github.com/rs/zerolog/log"
 
 	coursesense "github.com/jacobmichels/Course-Sense-Go"
 )
@@ -35,7 +36,7 @@ func (t Trigger) Trigger(ctx context.Context) error {
 	}
 
 	if len(sections) == 0 {
-		log.Println("No watched sections")
+		log.Info().Msg("No watched sections")
 		return nil
 	}
 
@@ -45,7 +46,7 @@ func (t Trigger) Trigger(ctx context.Context) error {
 			return fmt.Errorf("failed to get available seats for %s: %w", section, err)
 		}
 
-		log.Printf("%d available seats found for %s", available, section)
+		log.Info().Msgf("%d available seats found for %s", available, section)
 
 		if available == 0 {
 			continue
@@ -64,7 +65,7 @@ func (t Trigger) Trigger(ctx context.Context) error {
 		}
 
 		if err := t.watcherService.Cleanup(ctx, section); err != nil {
-			return fmt.Errorf("failed to remove watchers from %s: %w", section, err)
+			return fmt.Errorf("failed to cleanup section %s: %w", section, err)
 		}
 	}
 

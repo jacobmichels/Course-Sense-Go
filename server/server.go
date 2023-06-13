@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
+
+	"github.com/rs/zerolog/log"
 
 	coursesense "github.com/jacobmichels/Course-Sense-Go"
 	"github.com/julienschmidt/httprouter"
@@ -31,7 +32,7 @@ func (s Server) Start(ctx context.Context) error {
 	r.PUT("/register", s.registerHandler())
 
 	srv := http.Server{Addr: s.addr, Handler: r}
-	log.Printf("listening on %s", s.addr)
+	log.Info().Msgf("listening on %s", s.addr)
 
 	// start server, respecting context cancelation
 	errChan := make(chan error)
@@ -42,14 +43,14 @@ func (s Server) Start(ctx context.Context) error {
 			return fmt.Errorf("server error: %w", err)
 		}
 	case <-ctx.Done():
-		log.Println("gracefully shutting down")
+		log.Info().Msg("gracefully shutting down")
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
 		if err := srv.Shutdown(shutdownCtx); err != nil {
 			return fmt.Errorf("server shutdown error: %w", err)
 		}
-		log.Println("server shutdown complete")
+		log.Info().Msg("server shutdown complete")
 	}
 
 	return nil
@@ -57,10 +58,10 @@ func (s Server) Start(ctx context.Context) error {
 
 func (s Server) pingHandler() httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		log.Println("Ping request received")
+		log.Info().Msg("Ping request received")
 
 		if _, err := w.Write([]byte("OK")); err != nil {
-			log.Printf("Error writing ping response: %s", err)
+			log.Error().Msgf("Error writing ping response: %s", err)
 		}
 	}
 }
@@ -81,31 +82,31 @@ func (r RegisterRequest) Valid() error {
 
 func (s Server) registerHandler() httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		log.Println("Register request received")
+		log.Info().Msg("Register request received")
 
 		var req RegisterRequest
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			log.Printf("error decoding register request: %s", err)
+			log.Error().Msgf("error decoding register request: %s", err)
 			http.Error(w, "Failed to parse request", http.StatusBadRequest)
 			return
 		}
 
 		if err := req.Valid(); err != nil {
-			log.Printf("register request invalid: %s", err)
+			log.Error().Msgf("register request invalid: %s", err)
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
 			return
 		}
 
 		if err := s.registrationService.Register(r.Context(), req.Section, req.Watcher); err != nil {
-			log.Printf("registration failed: %s", err)
+			log.Error().Msgf("registration failed: %s", err)
 			http.Error(w, "Registration failed, please ensure the course you are registering for exists. If error persists please contact service owner", http.StatusBadRequest)
 			return
 		}
 
 		w.WriteHeader(http.StatusCreated)
 		if _, err := w.Write([]byte("Registered for section\n")); err != nil {
-			log.Printf("error writing register response: %s", err)
+			log.Error().Msgf("error writing register response: %s", err)
 		}
-		log.Printf("Register request succeeded: %s*%d*%s*%s for %s", req.Section.Course.Department, req.Section.Course.Code, req.Section.Code, req.Section.Term, req.Watcher.Email)
+		log.Info().Msgf("Register request succeeded: %s*%d*%s*%s for %s", req.Section.Course.Department, req.Section.Course.Code, req.Section.Code, req.Section.Term, req.Watcher.Email)
 	}
 }

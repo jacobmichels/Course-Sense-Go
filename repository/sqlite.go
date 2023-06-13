@@ -38,6 +38,8 @@ func newSQLiteRepository(ctx context.Context, cfg config.SQLite) (SQLiteReposito
 		return SQLiteRepository{}, fmt.Errorf("failed to ping db: %w", err)
 	}
 
+	log.Info().Msg("connected to sqlite")
+
 	// perform migrations
 	driver, err := sqlite.WithInstance(db, &sqlite.Config{})
 	if err != nil {
@@ -50,10 +52,15 @@ func newSQLiteRepository(ctx context.Context, cfg config.SQLite) (SQLiteReposito
 	}
 
 	err = m.Up()
-	if err != nil && err.Error() != "no change" {
+	if err != nil {
+		if err.Error() == "no change" {
+			log.Info().Msg("database already fully migrated")
+			return SQLiteRepository{db, cfg}, nil
+		}
 		return SQLiteRepository{}, fmt.Errorf("failed to execute migrations: %w", err)
 	}
 
+	log.Info().Msg("database migrated")
 	return SQLiteRepository{db, cfg}, nil
 }
 
@@ -61,6 +68,7 @@ func (r SQLiteRepository) AddWatcher(ctx context.Context, section coursesense.Se
 	txCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
+	log.Debug().Msg("starting database transaction")
 	tx, err := r.db.BeginTx(txCtx, &sql.TxOptions{})
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
@@ -71,22 +79,26 @@ func (r SQLiteRepository) AddWatcher(ctx context.Context, section coursesense.Se
 	if err != nil {
 		return fmt.Errorf("failed to persist course: %w", err)
 	}
+	log.Debug().Msg("course persisted")
 
 	// then insert the section
 	section_id, err := persistSection(txCtx, tx, section, course_id)
 	if err != nil {
 		return fmt.Errorf("failed to persist section: %w", err)
 	}
+	log.Debug().Msg("section persisted")
 
 	// finally we can insert the watcher and commit the transaction
 	err = persistWatcher(txCtx, tx, watcher, section_id)
 	if err != nil {
 		return fmt.Errorf("failed to persist watcher: %w", err)
 	}
+	log.Debug().Msg("watcher persisted")
 
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("failed to commit transaction: %w", err)
 	}
+	log.Debug().Msg("transaction committed")
 
 	return nil
 }
@@ -108,12 +120,15 @@ func persistCourse(txCtx context.Context, tx *sql.Tx, course coursesense.Course)
 		if err != nil {
 			return 0, fmt.Errorf("failed to fetch inserted course id: %w", err)
 		}
+		log.Debug().Msg("inserting course into db")
+
 		return int(course_id), nil
 	} else if err != nil {
 		return 0, fmt.Errorf("failed to check if course already exists in database: %w", err)
 	}
 
 	// simply return the rowid if the course does exist in the db
+	log.Debug().Msg("course already exists in db")
 	return course_id, nil
 }
 
@@ -134,12 +149,15 @@ func persistSection(txCtx context.Context, tx *sql.Tx, section coursesense.Secti
 		if err != nil {
 			return 0, fmt.Errorf("failed to fetch inserted section id: %w", err)
 		}
+		log.Debug().Msg("inserting section into db")
+
 		return int(section_id), nil
 	} else if err != nil {
 		return 0, fmt.Errorf("failed to check if section already exists in database: %w", err)
 	}
 
-	// simply return the rowid if the course does exist in the db
+	// simply return the rowid if the section does exist in the db
+	log.Debug().Msg("section already exists in db")
 	return section_id, nil
 }
 
@@ -150,6 +168,7 @@ func persistWatcher(txCtx context.Context, tx *sql.Tx, watcher coursesense.Watch
 	err := tx.QueryRowContext(txCtx, "SELECT id FROM watchers WHERE email=$1 AND section_id=$2", watcher.Email, section_id).Scan(&watcher_id)
 	if err != nil && errors.Is(err, sql.ErrNoRows) {
 		// if it doesn't exist, insert it
+		log.Debug().Msg("inserting watcher into db")
 		_, err := tx.ExecContext(txCtx, "INSERT INTO watchers (email, section_id) VALUES ($1, $2)", watcher.Email, section_id)
 		if err != nil {
 			return fmt.Errorf("insert statement failed: %w", err)
@@ -157,6 +176,8 @@ func persistWatcher(txCtx context.Context, tx *sql.Tx, watcher coursesense.Watch
 	} else if err != nil {
 		return fmt.Errorf("failed to check if watcher already exists in database: %w", err)
 	}
+
+	log.Debug().Msg("watcher already exists in db")
 	return nil
 }
 
@@ -182,6 +203,8 @@ func (r SQLiteRepository) GetWatchedSections(ctx context.Context) ([]coursesense
 		return nil, fmt.Errorf("failed to iterate rows: %w", err)
 	}
 
+	log.Info().Int("count", len(sections)).Msg("retrieved watched sections")
+
 	return sections, nil
 }
 
@@ -193,7 +216,7 @@ func (r SQLiteRepository) GetWatchers(ctx context.Context, section coursesense.S
 		return nil, fmt.Errorf("failed to get section_id from db: %w", err)
 	}
 
-	// then get the emails
+	// then get the watchers
 	rows, err := r.db.QueryContext(ctx, "SELECT email FROM watchers WHERE section_id=$1", section_id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch relevant watchers from db: %w", err)
@@ -214,6 +237,8 @@ func (r SQLiteRepository) GetWatchers(ctx context.Context, section coursesense.S
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("failed to iterate rows: %w", err)
 	}
+
+	log.Info().Int("count", len(watchers)).Msg("retrieved watchers for section")
 
 	return watchers, nil
 }
@@ -254,7 +279,7 @@ func (r SQLiteRepository) Cleanup(ctx context.Context, section coursesense.Secti
 
 	// if no other sections reference this course, we can safely delete it
 	if count == 0 {
-		log.Info().Msgf("deleting course %v %v", section.Course.Department, section.Course.Code)
+		log.Info().Str("course", fmt.Sprintf("%v:%v", section.Course.Department, section.Course.Code)).Msg("deleting course")
 		_, err = r.db.ExecContext(ctx, "DELETE FROM courses WHERE id=$1", course_id)
 		if err != nil {
 			return fmt.Errorf("failed to delete course: %w", err)

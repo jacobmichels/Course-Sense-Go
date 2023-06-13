@@ -2,9 +2,9 @@ package config
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/viper"
 )
 
@@ -39,7 +39,7 @@ func ParseConfig() (Config, error) {
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			log.Println("No config file found, continuing with env and defaults")
+			log.Info().Msg("No config file found, continuing with env and defaults")
 		} else {
 			// Config file was found but another error was produced
 			return Config{}, fmt.Errorf("failed to read config file: %s", err)
@@ -66,7 +66,7 @@ func validateConfig(cfg Config) error {
 	}
 
 	if cfg.Database.Type == "sqlite" && cfg.Database.SQLite.ConnectionString == "" {
-		log.Printf("warn: sqlite connection string is empty")
+		log.Info().Msgf("warn: sqlite connection string is empty")
 	}
 
 	return nil

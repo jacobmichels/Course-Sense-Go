@@ -5,7 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/sqlite"
@@ -253,7 +254,7 @@ func (r SQLiteRepository) Cleanup(ctx context.Context, section coursesense.Secti
 
 	// if no other sections reference this course, we can safely delete it
 	if count == 0 {
-		log.Printf("deleting course %v %v", section.Course.Department, section.Course.Code)
+		log.Info().Msgf("deleting course %v %v", section.Course.Department, section.Course.Code)
 		_, err = r.db.ExecContext(ctx, "DELETE FROM courses WHERE id=$1", course_id)
 		if err != nil {
 			return fmt.Errorf("failed to delete course: %w", err)

@@ -19,7 +19,11 @@ import (
 )
 
 func main() {
-	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout})
+	// use pretty logging for local development
+	// app_env is set in the dockerfile
+	if os.Getenv("app_env") != "prod" {
+		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stdout})
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

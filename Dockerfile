@@ -17,5 +17,6 @@ COPY --from=builder /usr/bin/course-sense-go /usr/bin/course-sense-go
 
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 USER appuser
+ENV app_env=prod
 
 ENTRYPOINT [ "/usr/bin/course-sense-go" ]

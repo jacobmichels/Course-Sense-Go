@@ -11,7 +11,7 @@ COPY . .
 
 RUN go build -o /usr/bin/course-sense-go cmd/coursesense/main.go
 
-FROM alpine:3.18.0
+FROM alpine:3.18.2
 
 COPY --from=builder /usr/bin/course-sense-go /usr/bin/course-sense-go
 

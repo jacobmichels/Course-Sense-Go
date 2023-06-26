@@ -8,7 +8,7 @@ require (
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/rs/zerolog v1.29.1
 	github.com/spf13/viper v1.16.0
-	google.golang.org/api v0.127.0
+	google.golang.org/api v0.128.0
 	modernc.org/sqlite v1.23.1
 )
 
